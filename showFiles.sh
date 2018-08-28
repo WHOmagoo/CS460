@@ -1,4 +1,4 @@
-MAIN=""
+MAIN="showFiles"
 
 as86 -o bs.o bs.s
 

@@ -1,10 +1,8 @@
-MAIN=""
-
 as86 -o bs.o bs.s
 
-bcc -c -ansi $MAIN.c
+bcc -c -ansi nameResponse.c
 
-ld86 -d bs.o $MAIN.o /usr/lib/bcc/libc.a
+ld86 -d bs.o nameResponse.o /usr/lib/bcc/libc.a
 
 ls -l a.out
 

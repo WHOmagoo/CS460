@@ -1,4 +1,4 @@
-MAIN=""
+MAIN="loadKernel"
 
 as86 -o bs.o bs.s
 
