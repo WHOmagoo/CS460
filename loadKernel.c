@@ -118,6 +118,9 @@ main()
     getblk((u16) (inode_table + (bootInodeNum - 1) / 8), buf1);
     ip = (INODE *) buf1 + (bootInodeNum - 1) % 8;
 
+    //load the indirect block into buf2 before we mess with our memory using setes and inces
+    getblk((u16) ip->i_block[12], buf2);
+
 
     setes(0x1000);
 
@@ -151,8 +154,6 @@ main()
     //prints("d-fin\n\r");
 
     if (ip->i_block[12]){
-
-        getblk((u16) ip->i_block[12], buf2);
 
         up = (u32 *) buf2;
 
