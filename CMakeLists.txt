@@ -7,4 +7,4 @@ set(CMAKE_C_FLAGS -m32)
 set(CMAKE_CXX_COMPILER gcc)
 set(CMAKE_CXX_FLAGS -m32)
 
-add_executable(CS460 main.c)
+add_executable(CS460Lab2 main.c)

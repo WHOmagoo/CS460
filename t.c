@@ -44,9 +44,20 @@ char *tab = "0123456789ABCDEF";
 #include "uart.c"
 
 UART *up;
+char *string;
+
 
 int main()
 {
+//    uart_init();
+//    for (i=0; i<4; i++){
+//        up = &uart[i];
+//        uprints(up, "enter a line from this UART : ");
+//        ugets(up, string);
+//        uprints(up, "    ECHO : "); uprints(up, string); uprints(up, "\n\r");
+//    }
+//
+
     int i;
     int size = sizeof(int);
     char string[32];
@@ -57,21 +68,32 @@ int main()
     uart_init();
 
     up = &uart[0];
+
+    char *input = "Number %d, Hex number %x, String %s, char %c, COOL!\n\r";
+    int num = -2147483646;
+    int hex = 0xF43A;
+    char* s = "Mambo combo";
+    char c = '(';
+    fuprints(up, input, num, hex, s, c);
+
     uprints(up, "Enter lines from UART terminal, enter quit to exit\n\r");
 
     while(1){
         ugets(up, string);
         uprints(up, "    ");
-        if (strcmp(string, "quit")==0)
+        if (strcmp(string, "quit")==0) {
+            uprints(up, "Moving on then\n\r");
             break;
-        uprints(up, string);  uprints(up, "\n\r");
+        }
+        fuprints(up, "\tEntered text was: %s", string);  uprints(up, "\n\r");
     }
 
 
     uprints(up, "Compute sum of array\n\r");
     sum = 0;
-    for (i=0; i<N; i++)
+    for (i=0; i<N; i++) {
         sum += v[i];
-    uputc(up, (sum/10)+'0'); uputc(up, (sum%10)+'0');
-    uprints(up, "\n\rEND OF RUN\n\r");
+    }
+
+    fuprints(up, "Total sum of integers is %d\n\rEND OF RUN\n\r", sum);
 }
