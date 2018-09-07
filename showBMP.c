@@ -18,6 +18,11 @@ int show_bmp(char *p, int start_row, int start_col)
     unsigned char r, g, b;
     char *pp;
     int *q = (int *)(p+14); // skip over 14-byte file header
+
+    int offset = *q;
+
+    //q+= 4;
+
     w = *(q+1);
     h = *(q+2); // image width in pixels
 // image height in pixels
@@ -31,7 +36,8 @@ int show_bmp(char *p, int start_row, int start_col)
             b = *pp; g = *(pp+1); r = *(pp+2); // BRG values
             pixel = (b<<16) | (g<<8) | r;
 // pixel value
-            fb[i*WIDTH + j] = pixel; // write to frame buffer
+
+            fb[i * WIDTH + j] = pixel; // write to frame buffer
             pp += 3;
             pp += 3;
         }
