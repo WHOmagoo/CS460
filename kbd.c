@@ -28,6 +28,8 @@ typedef volatile struct kbd{
 }KBD;
 
 volatile KBD kbd;
+int lShift = 0;
+int rShift = 0;
 
 int kbd_init()
 {
@@ -39,8 +41,7 @@ int kbd_init()
     kp->data = 0; kp->room = 128;
 }
 
-void kbd_handler()
-{
+void kbd_handler() {
     u8 scode, c;
     KBD *kp = &kbd;
     color = YELLOW;
@@ -48,8 +49,22 @@ void kbd_handler()
     if (scode & 0x80)
         return;
     c = unsh[scode];
-    if (c >= 'a' && c <= 'z')
-        printf("kbd interrupt: c=%s %c\n", c, c);
+    if (c >= 'a' && c <= 'z'){
+        if (lShift || rShift) {
+            printf("kbd interrupt: c=%s %c\n", c - 32, c - 32);
+        } else {
+            printf("kbd interrupt: c=%s %c\n", c, c);
+        }
+    } else if (scode & 0x2A){
+        lShift = 1;
+    } else if (scode & 0x36){
+        rShift = 1;
+    } else if (scode & 0xAA){
+        lShift = 0;
+    } else if (scode & 0xB6){
+        rShift = 0;
+    }
+
     kp->buf[kp->head++] = c;
     kp->head %= 128;
     kp->data++; kp->room--;
