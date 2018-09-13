@@ -25,6 +25,8 @@ int color;
 #include "interrupts.c"
 #include "kbd.c"
 
+
+
 void copy_vectors(void) {
     extern u32 vectors_start;
     extern u32 vectors_end;
@@ -44,8 +46,136 @@ void timer_handler();
 // currentValueReg=0x04
 TIMER *tp[4];
 
+int interpritMode(int cpsr, int *result){
+    int i = 4;
+
+    while(i >= 0){
+        result[i] = cpsr & 1;
+        i--;
+        cpsr = cpsr >> 1;
+    }
+
+}
+
+int getcpsr() {
+    int result = 1;
+    __asm__ (
+        "mrs %0, cpsr;"
+        : "=r" (result)
+    );
+
+    return result;
+}
+
+int getspsr() {
+    int result = 1;
+    __asm__ (
+    "mrs %0, spsr;"
+    : "=r" (result)
+    );
+
+    return result;
+}
+
+int showCurCPSR(){
+    int cpsrResult[5];
+
+    interpritMode(getcpsr(), cpsrResult);
+
+    kprintf("CPSR %d%d%d%d%d\n", cpsrResult[0],cpsrResult[1],cpsrResult[2],cpsrResult[3],cpsrResult[4]);
+}
+
+int showCurSPSR(){
+    int cpsrResult[5];
+
+    interpritMode(getspsr(), cpsrResult);
+
+    kprintf("SPSR %d%d%d%d%d\n", cpsrResult[0],cpsrResult[1],cpsrResult[2],cpsrResult[3],cpsrResult[4]);
+}
+
+int sayCurMode(){
+    int cpsrResult[5];
+    interpritMode(getcpsr(), cpsrResult);
+    
+    int irqMode[] = {1,0,0,1,0};
+    int svcMode[] = {1,0,0,1,1};
+    
+    int i = 0;
+    
+    int *cur;
+    char *result;
+    
+    
+    if(cpsrResult[4] == 1){
+        cur = svcMode;
+        result = "CPU is in SVC mode\n";
+    } else {
+        cur = irqMode;
+        result = "CPU is in IRQ mode\n";
+    }
+    
+    while(i < 4){
+        if(cur[i] != cpsrResult[i]){
+            kprintf("There was an error matching the current mode. ", result);
+
+            for(i = 0; i < 5; i++){
+                kprintf("(%d,%d)", cur[i], cpsrResult[i]);
+            }
+
+            kprintf("\n");
+            return;
+        }
+        
+        i++;
+    }
+    
+    kprintf(result);
+    return;
+}
+
+int sayPrevMode(){
+    int cpsrResult[5];
+    interpritMode(getspsr(), cpsrResult);
+
+    int irqMode[] = {1,0,0,1,0};
+    int svcMode[] = {1,0,0,1,1};
+
+    int i = 0;
+
+    int *cur;
+    char *result;
+
+
+    if(cpsrResult[4] == 1){
+        cur = svcMode;
+        result = "CPU was is in SVC mode\n";
+    } else {
+        cur = irqMode;
+        result = "CPU was is in IRQ mode\n";
+    }
+
+    while(i < 4){
+        if(cur[i] != cpsrResult[i]){
+            kprintf("There was an error matching the saved mode. ");
+
+            for(i = 0; i < 5; i++){
+                kprintf("(%d,%d)", cur[i], cpsrResult[i]);
+            }
+
+            kprintf("\n");
+            return;
+        }
+
+        i++;
+    }
+
+    kprintf(result);
+    return;
+}
+
 void IRQ_handler()
 {
+
     int vicstatus, sicstatus;
     int ustatus, kstatus;
 
@@ -91,6 +221,8 @@ void IRQ_handler()
         timer_handler(0);
     }
     if (vicstatus & (1<<31)){
+        sayCurMode();
+        sayPrevMode();
         if (sicstatus & (1<<3)){
             kbd_handler();
         }
@@ -99,12 +231,14 @@ void IRQ_handler()
 
 int main()
 {
+
     int i;
     char line[128];
 
     color = YELLOW;
     row = col = 0;
     fbuf_init();
+
 
     /* enable timer0,1, uart0,1 SIC interrupts */
     VIC_INTENABLE |= (1<<4);  // timer0,1 at bit4
@@ -116,6 +250,16 @@ int main()
     SIC_ENSET = 1<<3;     // KBD int=3 on SIC
     SIC_PICENSET = 1<<3;  // KBD int=3 on SIC
 
+    /****
+
+    IRQ mode: 10010 (0x12)
+    SVC mode: 10011 (0x13)
+
+    ****/
+
+    kprintf("SVC mode is 10011\n");
+    kprintf("IRQ mode is 10010\n");
+    sayCurMode();
     kprintf("C3.2 start: test timer KBD drivers by interrupts\n");
     timer_init();
     kbd_init();
@@ -126,6 +270,9 @@ int main()
     }
     ************/
     timer_start(0);
+
+
+
     while(1){
         color = CYAN;
         kprintf("Enter a line from KBD\n");
