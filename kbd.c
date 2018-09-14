@@ -28,8 +28,8 @@ typedef volatile struct kbd{
 }KBD;
 
 volatile KBD kbd;
-int lShift = 0;
-int rShift = 0;
+volatile int lShift = 0;
+volatile  int rShift = 0;
 
 int kbd_init()
 {
@@ -46,28 +46,44 @@ void kbd_handler() {
     KBD *kp = &kbd;
     color = YELLOW;
     scode = *(kp->base + KDATA);
-    if (scode & 0x80)
+    if (scode & 0x80) {
+        if (scode == 0xAA){
+            printf("AA depressed");
+            lShift = 0;
+        } else if (scode == 0xB6){
+            printf("B6 depressed");
+            rShift = 0;
+        }
+
+        printf("in 0x80 [%d]\n", c);
+
         return;
+    }
     c = unsh[scode];
     if (c >= 'a' && c <= 'z'){
-        if (lShift || rShift) {
-            printf("kbd interrupt: c=%s %c\n", c - 32, c - 32);
-        } else {
-            printf("kbd interrupt: c=%s %c\n", c, c);
+        if(lShift || rShift){
+            c -= 32;
         }
-    } else if (scode & 0x2A){
-        lShift = 1;
-    } else if (scode & 0x36){
-        rShift = 1;
-    } else if (scode & 0xAA){
-        lShift = 0;
-    } else if (scode & 0xB6){
-        rShift = 0;
+
+        printf("kbd interrupt: c=%s %c %d\n", c, c, c);
+
+
     }
 
-    kp->buf[kp->head++] = c;
-    kp->head %= 128;
-    kp->data++; kp->room--;
+    if (scode == 0x2A){
+        lShift = 1;
+    } else if (scode == 0x36){
+        rShift = 1;
+    } else {
+
+        printf("[%x]\n", scode);
+
+
+        kp->buf[kp->head++] = c;
+        kp->head %= 128;
+        kp->data++;
+        kp->room--;
+    }
 }
 
 int kgetc()
@@ -80,6 +96,7 @@ int kgetc()
 
     lock();
     c = kp->buf[kp->tail++];
+
     kp->tail %= 128;
     kp->data--; kp->room++;
     unlock();
