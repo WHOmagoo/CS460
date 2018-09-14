@@ -67,9 +67,17 @@ int main()
 
     uart_init();
 
-    up = &uart[0];
+//    up = &uart[0];
 
-    char *input = "Number %d, Hex number %x, String %s, char %c, COOL!\n\r";
+    for (i=0; i<4; i++){
+        up = &uart[i];
+        uprints(up, "enter a line from this UART : ");
+        ugets(up, string);
+        fuprints(up, "    ECHO : %s\n\r", string);
+    }
+
+
+    char *input = "Number %d, Hex number %x, String \"%s\", char %c, COOL!\n\r";
     int num = -2147483646;
     int hex = 0xF43A;
     char* s = "Mambo combo";

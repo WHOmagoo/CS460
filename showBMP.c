@@ -21,8 +21,6 @@ int show_bmp(char *p, int start_row, int start_col)
 
     int offset = *q;
 
-    //q+= 4;
-
     w = *(q+1);
     h = *(q+2); // image width in pixels
 // image height in pixels
@@ -30,11 +28,12 @@ int show_bmp(char *p, int start_row, int start_col)
 //BMP images are upside down, each row is a multiple of 4 bytes
     rsize = 4*((3*w + 3)/4); // multiple of 4
     p += (h-1)*rsize; // last row of pixels
+
     for (i=start_row; i<start_row + h / 2; i++){
         pp = p;
         for (j=start_col; j<start_col + w / 2; j++){
             b = *pp; g = *(pp+1); r = *(pp+2); // BRG values
-            pixel = (b<<16) | (g<<8) | r;
+            pixel = (b<<16) + (g<<8) + r;
 // pixel value
 
             fb[i * WIDTH + j] = pixel; // write to frame buffer
@@ -43,9 +42,26 @@ int show_bmp(char *p, int start_row, int start_col)
         }
         p -= rsize;
         p -= rsize;
+
 // advance pp to next pixel
 // to preceding row
     }
+
+//    for (i=start_row; i<start_row + h; i++){
+//        pp = p;
+//        for (j=start_col; j<start_col + w; j++){
+//            b = *pp; g = *(pp+1); r = *(pp+2); // BRG values
+//            pixel = (b<<16) | (g<<8) | r;
+//// pixel value
+//
+//            fb[i * WIDTH + j] = pixel; // write to frame buffer
+//            pp += 3;
+//        }
+//        p -= rsize;
+
+// advance pp to next pixel
+// to preceding row
+//    }
     fuprints(up, "\nBMP image height=%d width=%d\n", h, w);
 }
 

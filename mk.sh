@@ -21,7 +21,7 @@ echo ready to go?
 read dummy
 
 qemu-system-arm -M realview-pbx-a9 -m 128M -kernel t.bin \
--serial mon:stdio -serial /dev/pts/0 -serial /dev/pts/0 -serial /dev/pts/0
+-serial mon:stdio -serial /dev/pts/3 -serial /dev/pts/5 -serial /dev/pts/6
 
 #qemu-system-arm -M versatilepb -m 128M -kernel t.bin \
 #-serial mon:stdio
