@@ -45,6 +45,9 @@ void IRQ_handler()
     vicstatus = VIC_STATUS; // VIC_STATUS=0x10140000=status reg
     sicstatus = SIC_STATUS;
     //kprintf("vicstatus=%x sicstatus=%x\n", vicstatus, sicstatus);
+    if(vicstatus & (1<<4)){
+        timer_handler(0);
+    }
     if (vicstatus & 0x80000000){
         if (sicstatus & 0x08){
             kbd_handler();
@@ -61,17 +64,21 @@ int main()
     color = WHITE;
     row = col = 0;
 
-    fbuf_init();
-    kbd_init();
+
+/* enable timer0,1, uart0,1 SIC interrupts */
+    VIC_INTENABLE |= (1<<4);  // timer0,1 at bit4
+    VIC_INTENABLE |= (1<<5);  // timer2,3 at bit5
 
     /* enable KBD IRQ */
     VIC_INTENABLE |= 1<<31;  // SIC to VIC's IRQ31
     SIC_ENSET |= 1<<3;       // KBD int=3 on SIC
 
+    fbuf_init();
+    timer_init();
+    kbd_init();
 
 
     kprintf("Welcome to WANIX in Arm\n");
-    timer_init();
     timer_start(0);
     init();
     kfork((int)body, 1);

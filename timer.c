@@ -62,7 +62,7 @@ void timer_init()
 
     for (i=0; i<4; i++){
         tp = &timer[i];
-        if (i==0) tp->base = (u32 *)0x10k1E2000;
+        if (i==0) tp->base = (u32 *)0x101E2000;
         if (i==1) tp->base = (u32 *)0x101E2020;
         if (i==2) tp->base = (u32 *)0x101E3000;
         if (i==3) tp->base = (u32 *)0x101E3020;
