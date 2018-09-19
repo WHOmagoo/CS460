@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "exceptions.c"
 #include "queue.c"
 #include "kernel.c"
+#include "timer.c"
 
 
 void copy_vectors(void) {
@@ -67,7 +68,11 @@ int main()
     VIC_INTENABLE |= 1<<31;  // SIC to VIC's IRQ31
     SIC_ENSET |= 1<<3;       // KBD int=3 on SIC
 
+
+
     kprintf("Welcome to WANIX in Arm\n");
+    timer_init();
+    timer_start(0);
     init();
     kfork((int)body, 1);
 
