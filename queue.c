@@ -1,7 +1,6 @@
 
 // queue.c file
 extern PROC *freeList;
-// TODO WRITE YOUR OWN functions:
 
 int enqueue(PROC **queue, PROC *p) {
     int SR = int_off();  // IRQ interrupts off, return CPSR
