@@ -1,21 +1,46 @@
 
 // queue.c file
 extern PROC *freeList;
-// WRITE YOUR OWN functions:
+// TODO WRITE YOUR OWN functions:
 
-int enqueue(PROC **queue, PROC *p)
-{
+int enqueue(PROC **queue, PROC *p) {
     int SR = int_off();  // IRQ interrupts off, return CPSR
-    enter p into *queue by priority; PROCs with the same priority by FIFO;
+
+    PROC *cur = *queue;
+    PROC *prev = 0;
+    while (cur) {
+        if (cur->priority < p->priority) {
+            break;
+        }
+        prev = cur;
+        cur = cur->next;
+    }
+
+    if (prev == 0) {
+        p->next = *queue;
+        *queue = p;
+    } else {
+        p->next = cur;
+        prev->next = p;
+    }
+
     int_on(SR);          //  restore CPSR
-}				     }
+}
 
 PROC *dequeue(PROC **queue)
 {
     int SR = int_off();  // IRQ interrupts off, return CPSR
+
+    PROC *top = *queue;
+    *queue = (*queue)->next;
+
+    /*
     remove the FISRT element from *queue;
+     */
     int_on(SR);          //  restore CPSR
-    return pointer to dequeued PROC;
+
+    return top;
+    //return pointer to dequeued PROC;
 }
 
 int printList(char *name, PROC *p)

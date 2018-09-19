@@ -274,8 +274,7 @@ int kprinti(int x)
     kprintu(x);
 }
 
-int kprintf(char *fmt,...)
-{
+int kprintf(char *fmt,...) {
     int *ip;
     char *cp;
     cp = fmt;

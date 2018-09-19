@@ -16,10 +16,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "type.h"
 #include "string.c"
-#include "queue.c"
-#include "kbd.c"
 #include "vid.c"
+#include "kbd.c"
 #include "exceptions.c"
+#include "queue.c"
 #include "kernel.c"
 
 
@@ -32,7 +32,9 @@ void copy_vectors(void) {
     while(vectors_src < &vectors_end)
         *vectors_dst++ = *vectors_src++;
 }
+
 int kprintf(char *fmt, ...);
+
 void IRQ_handler()
 {
     int vicstatus, sicstatus;
