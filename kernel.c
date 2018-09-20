@@ -112,10 +112,13 @@ int scheduler()
 }
 
 
-int body()
+int body(int pid, int ppid, int func, int priority)
 {
+
+    kprintf("pid = %d, ppid = %d, func = %x, priority = %d\n", pid, ppid, func, priority);
+
     char c; char line[64];
-    int pid;
+    //int pid;
     kprintf("proc %d resume to body()\n", running->pid);
     while(1){
         pid = running->pid;
