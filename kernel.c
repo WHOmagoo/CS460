@@ -165,7 +165,7 @@ int kwait(int *status){
 
     while (child) {
         if (child->status == ZOMBIE) {
-            *status = child->status;
+            (*status) = child->exitCode;
             removeChild(child->parent, child);
 
             child->status = FREE;
