@@ -34,12 +34,6 @@ PROC *dequeue(PROC **queue)
 
     *queue = (*queue)->next;
 
-
-    //TODO possibly move this to ksleep and kwakeup
-
-
-    //END
-
     /*
     remove the FISRT element from *queue;
      */
