@@ -55,6 +55,7 @@ void IRQ_handler()
     }
 }
 int body();
+
 int main()
 {
     int i;
@@ -78,7 +79,7 @@ int main()
     kbd_init();
 
 
-    kprintf("Welcome to WANIX in Arm\n");
+    kprintf("Welcome to WANIX in Arm - Made by Hugh McGough\n");
     timer_start(0);
     init();
     kfork((int)body, 1);

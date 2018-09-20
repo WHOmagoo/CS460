@@ -31,7 +31,14 @@ PROC *dequeue(PROC **queue)
     int SR = int_off();  // IRQ interrupts off, return CPSR
 
     PROC *top = *queue;
+
     *queue = (*queue)->next;
+
+
+    //TODO possibly move this to ksleep and kwakeup
+
+
+    //END
 
     /*
     remove the FISRT element from *queue;
@@ -40,6 +47,19 @@ PROC *dequeue(PROC **queue)
 
     return top;
     //return pointer to dequeued PROC;
+}
+
+void printChildren(char *name, PROC *p){
+    PROC *curChild = p->child;
+
+    kprintf("%s = ", name);
+
+    while(curChild){
+        kprintf("[%d%d]->", curChild->pid, p->priority);
+        curChild = curChild->sibling;
+    }
+
+    kprintf("NULL\n");
 }
 
 int printList(char *name, PROC *p)
@@ -52,3 +72,56 @@ int printList(char *name, PROC *p)
     kprintf("NULL\n");
 }
 
+void addChild(PROC *queue, PROC *child){
+    if(child) {
+        child->parent = queue;
+
+        PROC *cur = queue->child;
+        PROC *prev = 0;
+        while (cur) {
+            prev = cur;
+            cur = cur->sibling;
+        }
+
+        if (prev) {
+            prev->sibling = child;
+        } else {
+            queue->child = child;
+        }
+    }
+}
+
+PROC * findRoot(PROC *queue){
+    PROC *prev = queue;
+    while (prev != queue->parent){
+        prev = queue;
+        queue = queue->parent;
+    }
+
+    kprintf("Found root with pid of %d", queue->pid);
+    return queue;
+}
+
+int removeChild(PROC *parent, PROC *child){
+    PROC *curChild = parent->child;
+    PROC *prevChild = 0;
+    while(curChild){
+        if(curChild->pid == child->pid){
+            if(prevChild == 0){
+                parent->child = curChild->sibling;
+            } else {
+                prevChild->sibling = curChild->sibling;
+            }
+
+            child->sibling = 0;
+            child->parent = 0;
+
+            return 1;
+        }
+
+        prevChild = curChild;
+        curChild = curChild->sibling;
+    }
+
+    return 0;
+}

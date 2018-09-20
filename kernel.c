@@ -39,7 +39,7 @@ typedef struct proc{
 }PROC;
 ***************************/
 #define NPROC 9
-PROC proc[NPROC], *running, *freeList, *readyQueue;
+PROC proc[NPROC], *running, *freeList, *readyQueue, *sleepList;
 int procsize = sizeof(PROC);
 int body();
 
@@ -67,13 +67,63 @@ int init()
     printList("freeList", freeList);
 }
 
-void kexit()
+int kexit(int exitValue)
 {
     printf("proc %d kexit\n", running->pid);
-    running->status = FREE;
-    running->priority = 0;
-    enqueue(&freeList, running);   // putproc(running);
-    tswitch();
+    if(running->pid != 1) {
+        running->status = ZOMBIE;
+        running->exitCode = exitValue;
+        if(running->child) {
+            addChild(&proc[1], running->child);
+
+            PROC *curChild = running->child->sibling;
+            while(curChild) {
+                curChild->parent = &proc[1];
+                curChild = curChild->sibling;
+            }
+
+            //wakeup p1 because it was given children
+            kwakeup(&proc[1]);
+        }
+
+        kwakeup(running->parent);
+//        enqueue(&freeList, running);   // putproc(running);
+        tswitch();
+    } else {
+        printf("p1 never dies!!!\n");
+    }
+}
+
+int ksleep(int event) {
+    int SR = int_off();
+// disable IRQ and return CPSR
+    running->event = event;
+    running->status = SLEEP;
+    enqueue(&sleepList, running);
+    tswitch(); // switch process
+    int_on(SR); // restore original CPSR
+}
+
+int kwakeup(int event)
+{
+    int SR = int_off();
+// disable IRQ and return CPSR
+
+    PROC *p = sleepList;
+
+    kprintf("Waking up = ");
+    while(p){
+        if (p->status==SLEEP && p->event==event){
+            p->status = READY;
+            enqueue(&readyQueue, p);
+            kprintf("[%d] ", p->pid);
+        }
+        p = p->next;
+    }
+
+    kprintf("\n");
+    int_on(SR);
+// restore original CPSR
 }
 
 PROC *kfork(int func, int priority)
@@ -89,6 +139,8 @@ PROC *kfork(int func, int priority)
     p->ppid = running->pid;
     p->parent = running;
 
+    addChild(running, p);
+
     // set kstack to resume to body
     // stack = r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r14
     //         1  2  3  4  5  6  7  8  9  10 11  12  13  14
@@ -102,6 +154,32 @@ PROC *kfork(int func, int priority)
     return p;
 }
 
+int kwait(int *status){
+
+    if(!(running->child)){
+        printf("Waiting for no children\n");
+        return -1;
+    }
+
+    PROC *child = running->child;
+
+    while (child) {
+        if (child->status == ZOMBIE) {
+            *status = child->status;
+            removeChild(child->parent, child);
+
+            child->status = FREE;
+            enqueue(&freeList, child);
+
+            return child->pid;
+        }
+
+        child = child->sibling;
+    }
+
+    ksleep((int) running);
+}
+
 int scheduler()
 {
     kprintf("proc %d in scheduler ", running->pid);
@@ -111,6 +189,31 @@ int scheduler()
     kprintf("next running = %d\n", running->pid);
 }
 
+void doExit(){
+        kprintf("Input a number for exit code: ");
+        char numberString[16];
+        kgets(numberString);
+        int n = atoi(numberString);
+        kexit(n);
+}
+
+int atoi(char *string){
+    int result = 0;
+    while(*string){
+        if(*string >= 48 && *string <= 57){
+            result = result * 10 + *string - 48;
+        }
+        string++;
+    }
+
+    return result;
+}
+
+void doWait(){
+    int status;
+    int pid = kwait(&status);
+    printf("ZOMBIE child pid %d, exit code %d\n", pid, status);
+}
 
 int body(int pid, int ppid, int func, int priority)
 {
@@ -132,16 +235,19 @@ int body(int pid, int ppid, int func, int priority)
         if (pid==7) color=WHITE;
         if (pid==8) color=CYAN;
 
+
         printList("readyQueue", readyQueue);
+        printChildren("Children", running);
         kprintf("proc %d running, parent = %d  ", running->pid, running->ppid);
-        kprintf("input a char [s|f|q] : ");
+        kprintf("input a char [s|f|q|w] : ");
         c = kgetc();
         printf("%c\n", c);
 
         switch(c){
-            case 's': tswitch();           break;
-            case 'f': kfork((int)body, 1); break;
-            case 'q': kexit();             break;
+            case 's': tswitch();            break;
+            case 'f': kfork((int)body, 1);  break;
+            case 'q': doExit();             break;
+            case 'w': doWait();             break;
         }
     }
 }

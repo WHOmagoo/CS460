@@ -86,7 +86,7 @@ void timer_handler(int n) {
 
     t->tick++;
 
-    if (t->tick >= 128){
+    if (t->tick >= 128*2){
         t->tick = 0; t->ss++;
         if (t->ss >= 60){
             t->ss = 0; t->mm++;

@@ -96,6 +96,7 @@ int kgets(char s[ ])
     char c;
     while((c=kgetc()) != '\r'){
         *s++ = c;
+        kputc(c);
     }
     *s = 0;
     return strlen(s);
