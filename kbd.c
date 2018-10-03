@@ -78,21 +78,21 @@ void kbd_handler() {
 
 //TODO make there only be one kgetc
 //kgetc lab3
-int kgetc()
-{
-    char c;
-    KBD *kp = &kbd;
-
-    unlock();
-    while(kp->data == 0);
-
-    lock();
-    c = kp->buf[kp->tail++];
-    kp->tail %= 128;
-    kp->data--; kp->room++;
-    unlock();
-    return c;
-}
+//int kgetc()
+//{
+//    char c;
+//    KBD *kp = &kbd;
+//
+//    unlock();
+//    while(kp->data == 0);
+//
+//    lock();
+//    c = kp->buf[kp->tail++];
+//    kp->tail %= 128;
+//    kp->data--; kp->room++;
+//    unlock();
+//    return c;
+//}
 
 //kgetc lab4
 int kgetc()
