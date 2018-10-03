@@ -14,15 +14,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
 
-#include "keymap"
-#define KCNTL 0x00
-#define KSTAT 0x04
-#define KDATA 0x08
-#define KCLK  0x0C
-#define KISTA 0x10
+// kbd.c file
+#define N_SCAN 64
 
-typedef volatile struct kbd{
-    char *base;
+#include "keymap"
+/********* byte offsets; for char *base *********/
+#define KCNTL    0x00 // 7- 6-    5(0=AT)  4=RxIntEn 3=TxIntEn  2   1   0
+#define KSTAT    0x04 // 7- 6=TxE 5=TxBusy 4=RXFull  3=RxBusy   2   1   0
+#define KDATA    0x08 // data register;
+#define KCLK     0x0C // clock register;
+#define KISTA    0x10 // int status register;
+
+typedef volatile struct kbd{ // base = 0x1000 6000
+    char *base;         // base address of KBD, as char *
     char buf[128];
     int head, tail, data, room;
 }KBD;
@@ -30,6 +34,8 @@ typedef volatile struct kbd{
 volatile KBD kbd;
 int lShift = 0;
 int rShift = 0;
+extern int color;
+int kputc(char); // kputc() in vid.c driver
 
 int kbd_init()
 {
@@ -70,6 +76,8 @@ void kbd_handler() {
     kp->data++; kp->room--;
 }
 
+//TODO make there only be one kgetc
+//kgetc lab3
 int kgetc()
 {
     char c;
@@ -86,11 +94,28 @@ int kgetc()
     return c;
 }
 
+//kgetc lab4
+int kgetc()
+{
+    char c;
+    KBD *kp = &kbd;
+    while(kp->data <= 0); // wait for data > 0; RONLY, no need to lock
+    c = kp->buf[kp->tail++];
+    kp->tail %= 128;
+
+    // updating variables: must disable interrupts
+    int_off();
+    kp->data--; kp->room++;
+    int_on();
+    return c;
+}
+
 int kgets(char s[ ])
 {
     char c;
-    while( (c = kgetc()) != '\r'){
+    while((c=kgetc()) != '\r'){
         *s++ = c;
+        kputc(c);
     }
     *s = 0;
     return strlen(s);

@@ -20,11 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 char *tab = "0123456789ABCDEF";
 int color;
 
-#include "timer.c"
+#include "type.h"
+#include "string.c"
 #include "vid.c"
-#include "interrupts.c"
 #include "kbd.c"
-
+#include "exceptions.c"
+#include "queue.c"
+#include "kernel.c"
+#include "timer.c"
 
 
 void copy_vectors(void) {
@@ -96,16 +99,16 @@ int showCurSPSR(){
 int sayCurMode(){
     int cpsrResult[5];
     interpritMode(getcpsr(), cpsrResult);
-    
+
     int irqMode[] = {1,0,0,1,0};
     int svcMode[] = {1,0,0,1,1};
-    
+
     int i = 0;
-    
+
     int *cur;
     char *result;
-    
-    
+
+
     if(cpsrResult[4] == 1){
         cur = svcMode;
         result = "CPU is in SVC mode\n";
@@ -113,7 +116,7 @@ int sayCurMode(){
         cur = irqMode;
         result = "CPU is in IRQ mode\n";
     }
-    
+
     while(i < 4){
         if(cur[i] != cpsrResult[i]){
             kprintf("There was an error matching the current mode. ", result);
@@ -125,10 +128,10 @@ int sayCurMode(){
             kprintf("\n");
             return;
         }
-        
+
         i++;
     }
-    
+
     kprintf(result);
     return;
 }
@@ -224,11 +227,29 @@ void IRQ_handler()
         sayCurMode();
         sayPrevMode();
         if (sicstatus & (1<<3)){
+
+int kprintf(char *fmt, ...);
+
+void IRQ_handler()
+{
+    int vicstatus, sicstatus;
+    int ustatus, kstatus;
+
+    // read VIC status register to find out which interrupt
+    vicstatus = VIC_STATUS; // VIC_STATUS=0x10140000=status reg
+    sicstatus = SIC_STATUS;
+    //kprintf("vicstatus=%x sicstatus=%x\n", vicstatus, sicstatus);
+    if(vicstatus & (1<<4)){
+        timer_handler(0);
+    }
+    if (vicstatus & 0x80000000){
+        if (sicstatus & 0x08){
             kbd_handler();
         }
     }
 }
 
+//main from lab3
 int main()
 {
 
@@ -279,5 +300,39 @@ int main()
         kgets(line);
         color = CYAN;
         kprintf("line = %s\n", line);
+int body();
+
+//main from lab4
+int main()
+{
+    int i;
+    char line[128];
+    u8 kbdstatus, key, scode;
+
+    color = WHITE;
+    row = col = 0;
+
+
+/* enable timer0,1, uart0,1 SIC interrupts */
+    VIC_INTENABLE |= (1<<4);  // timer0,1 at bit4
+    VIC_INTENABLE |= (1<<5);  // timer2,3 at bit5
+
+    /* enable KBD IRQ */
+    VIC_INTENABLE |= 1<<31;  // SIC to VIC's IRQ31
+    SIC_ENSET |= 1<<3;       // KBD int=3 on SIC
+
+    fbuf_init();
+    timer_init();
+    kbd_init();
+
+
+    kprintf("Welcome to WANIX in Arm - Made by Hugh McGough\n");
+    timer_start(0);
+    init();
+    kfork((int)body, 1);
+
+    while(1){
+        if (readyQueue)
+            tswitch();
     }
 }
