@@ -182,11 +182,11 @@ int kwait(int *status){
 
 int scheduler()
 {
-    kprintf("proc %d in scheduler ", running->pid);
+//    kprintf("proc %d in scheduler ", running->pid);
     if (running->status == READY)
         enqueue(&readyQueue, running);
     running = dequeue(&readyQueue);
-    kprintf("next running = %d\n", running->pid);
+//    kprintf("next running = %d\n", running->pid);
 }
 
 void doExit(){
@@ -218,11 +218,11 @@ void doWait(){
 int body(int pid, int ppid, int func, int priority)
 {
 
-    kprintf("pid = %d, ppid = %d, func = %x, priority = %d\n", pid, ppid, func, priority);
+//    kprintf("pid = %d, ppid = %d, func = %x, priority = %d\n", pid, ppid, func, priority);
 
     char c; char line[64];
     //int pid;
-    kprintf("proc %d resume to body()\n", running->pid);
+    //kprintf("proc %d resume to body()\n", running->pid);
     while(1){
         pid = running->pid;
         if (pid==0) color=BLUE;
@@ -236,18 +236,22 @@ int body(int pid, int ppid, int func, int priority)
         if (pid==8) color=CYAN;
 
 
-        printList("readyQueue", readyQueue);
-        printChildren("Children", running);
-        kprintf("proc %d running, parent = %d  ", running->pid, running->ppid);
-        kprintf("input a char [s|f|q|w] : ");
-        c = kgetc();
-        printf("%c\n", c);
+//        printList("Sleep Queue", sleepList);
+//        printList("readyQueue", readyQueue);
+        //printChildren("Children", running);
+        //kprintf("proc %d running, parent = %d  ", running->pid, running->ppid);
+        //kprintf("input a char [s|f|q|w|q : ");
+        //c = kgetc();
+//        printf("%c\n", c);
 
-        switch(c){
-            case 's': tswitch();            break;
-            case 'f': kfork((int)body, 1);  break;
-            case 'q': doExit();             break;
-            case 'w': doWait();             break;
-        }
+        tswitch();
+
+//        switch(c){
+//            case 's': tswitch();            break;
+//            case 'f': kfork((int)body, 1);  break;
+//            case 'q': doExit();             break;
+//            case 'w': doWait();             break;
+//            case ',': kprintf("WAAAAHHH!!!!");
+//        }
     }
 }

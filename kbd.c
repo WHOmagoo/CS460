@@ -54,6 +54,7 @@ void kbd_handler() {
     scode = *(kp->base + KDATA);
     if (scode & 0x80)
         return;
+
     c = unsh[scode];
     if (c >= 'a' && c <= 'z'){
         if (lShift || rShift) {
@@ -74,6 +75,7 @@ void kbd_handler() {
     kp->buf[kp->head++] = c;
     kp->head %= 128;
     kp->data++; kp->room--;
+    kwakeup(&kp->data);
 }
 
 //TODO make there only be one kgetc
@@ -99,7 +101,14 @@ int kgetc()
 {
     char c;
     KBD *kp = &kbd;
-    while(kp->data <= 0); // wait for data > 0; RONLY, no need to lock
+
+    lock();
+    if(kp->data==0){
+        unlock();
+        ksleep(&kp->data);
+    }
+
+
     c = kp->buf[kp->tail++];
     kp->tail %= 128;
 
@@ -107,11 +116,13 @@ int kgetc()
     int_off();
     kp->data--; kp->room++;
     int_on();
+    unlock();
     return c;
 }
 
 int kgets(char s[ ])
 {
+    kprints("Getting string");
     char c;
     while((c=kgetc()) != '\r'){
         *s++ = c;

@@ -252,9 +252,23 @@ void IRQ_handler()
 
 int body();
 
+void listen(){
+
+    char line[128];
+    row = col = 0;
+
+    while (1) {
+        color = CYAN;
+        kprintf("Enter a line from KBD\n");
+        kgets(line);
+        color = CYAN;
+        kprintf("line = %s\n", line);
+
+    }
+}
+
 //main from lab4
-int main()
-{
+int main() {
     int i;
     char line[128];
     u8 kbdstatus, key, scode;
@@ -264,12 +278,12 @@ int main()
 
 
 /* enable timer0,1, uart0,1 SIC interrupts */
-    VIC_INTENABLE |= (1<<4);  // timer0,1 at bit4
-    VIC_INTENABLE |= (1<<5);  // timer2,3 at bit5
+    VIC_INTENABLE |= (1 << 4);  // timer0,1 at bit4
+    VIC_INTENABLE |= (1 << 5);  // timer2,3 at bit5
 
     /* enable KBD IRQ */
-    VIC_INTENABLE |= 1<<31;  // SIC to VIC's IRQ31
-    SIC_ENSET |= 1<<3;       // KBD int=3 on SIC
+    VIC_INTENABLE |= 1 << 31;  // SIC to VIC's IRQ31
+    SIC_ENSET |= 1 << 3;       // KBD int=3 on SIC
 
     fbuf_init();
     timer_init();
@@ -279,9 +293,10 @@ int main()
     kprintf("Welcome to WANIX in Arm - Made by Hugh McGough\n");
     timer_start(0);
     init();
-    kfork((int)body, 1);
+    kfork((int) body, 1);
+    kfork((int)listen, 1);
 
-    while(1){
+    while (1) {
         if (readyQueue)
             tswitch();
     }
