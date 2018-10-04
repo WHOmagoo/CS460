@@ -28,12 +28,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 typedef volatile struct kbd{ // base = 0x1000 6000
     char *base;         // base address of KBD, as char *
     char buf[128];
-    int head, tail, data, room;
+    int head, tail;
+    SEMAPHORE data;
+    SEMAPHORE line;
 }KBD;
 
 extern int color;
 volatile KBD kbd;
 int kputc(char);
+int lShift = 0;
+int rShift = 0;
 
 int kbd_init()
 {
@@ -41,7 +45,8 @@ int kbd_init()
     kp->base = (char *)0x10006000;
     *(kp->base+KCNTL) = 0x14; // 0001 0100
     *(kp->base+KCLK)  = 8;
-    kp->data = 0;kp->room = 128;
+    kp->data.value = 0; kp->data.queue = 0;
+    kp->line.value = 0; kp->line.queue = 0;
     kp->head = kp->tail = 0;
 }
 
@@ -53,50 +58,85 @@ void kbd_handler()
     KBD *kp = &kbd;
     color=YELLOW;
     scode = *(kp->base+KDATA);
-    if (scode & 0x80)
+    if (scode & 0x80) {
+        if (scode == 0xAA){
+            lShift = 0;
+        } else if (scode == 0xB6){
+            rShift = 0;
+        }
         return;
+    }
 
     c = unsh[scode];
-    /*
-    if (c == 'r')
-       kputc('\n');
-    kputc(c);
-    */
-    /*********
-    kprintf("kbd interrupt: c=");
-    if (c != '\r')
-      kprintf("%x %c\n", c, c);
-    else
-      kprints("0x 0D <cr>\n\r");
-    *****************/
-    kp->buf[kp->head++] = c;
-    kp->head %= 128;
-    kp->data++; kp->room--;
+    if (c >= 'a' && c <= 'z'){
+        if(lShift || rShift){
+            c -= 32;
+        }
+    }
+
+    if (scode == 0x2A){
+        lShift = 1;
+    } else if (scode == 0x36){
+        rShift = 1;
+    } else {
+
+
+        /*
+        if (c == 'r')
+           kputc('\n');
+        kputc(c);
+        */
+        /*********
+        kprintf("kbd interrupt: c=");
+        if (c != '\r')
+          kprintf("%x %c\n", c, c);
+        else
+          kprints("0x 0D <cr>\n\r");
+        *****************/
+        kp->buf[kp->head++] = c;
+        kp->head %= 128;
+        kputc(c);
+        V(&kp->data);
+        if (c == '\r') {
+            kputc('\r');
+            kputc('\n');
+            V(&kp->line);
+        }
+    }
 }
 
 int kputc(char);  // kputc() in vid.c driver
+
+int kbd_task(){
+    KBD *kp = &kbd;
+    while(1){
+        kprintf("Please enter in a line:");
+        P(&kp->line);
+        kgets(kp->line);
+        kprintf("line = %s\n", kp->line);
+    }
+}
 
 int kgetc()
 {
     char c;
     KBD *kp = &kbd;
-    while(kp->data <= 0); // wait for data > 0; RONLY, no need to lock
+
+    P(&kp->data);
+    lock();
     c = kp->buf[kp->tail++];
     kp->tail %= 128;
 
     // updating variables: must disable interrupts
-    int_off();
-    kp->data--; kp->room++;
-    int_on();
+    unlock();
     return c;
 }
 
-int kgets(char s[ ])
+int kgets(char *s)
 {
     char c;
     while((c=kgetc()) != '\r'){
         *s++ = c;
-        kputc(c);
     }
     *s = 0;
     return strlen(s);

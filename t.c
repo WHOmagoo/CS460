@@ -82,7 +82,7 @@ int main()
     kprintf("Welcome to WANIX in Arm - Made by Hugh McGough\n");
     timer_start(0);
     init();
-    kfork((int)body, 1);
+    kfork((int)kbd_task, 1);
 
     while(1){
         if (readyQueue)

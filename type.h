@@ -82,3 +82,9 @@ typedef struct proc{
 
     int    kstack[SSIZE];
 }PROC;
+
+typedef struct semaphore{
+    int spinlock; //spin lock, needed only in MP systems;
+    int value;      // initial value of semaphore
+    PROC *queue;
+}SEMAPHORE;

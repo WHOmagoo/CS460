@@ -39,6 +39,7 @@ typedef struct proc{
 }PROC;
 ***************************/
 #define NPROC 9
+#define N 8
 PROC proc[NPROC], *running, *freeList, *readyQueue, *sleepList;
 int procsize = sizeof(PROC);
 int body();
@@ -47,7 +48,7 @@ int init()
 {
     int i, j;
     PROC *p;
-    kprintf("kernel_init()\n");
+//    kprintf("kernel_init()\n");
     for (i=0; i<NPROC; i++){
         p = &proc[i];
         p->pid = i;
@@ -58,13 +59,13 @@ int init()
     freeList = &proc[0];
     readyQueue = 0;
 
-    printf("create P0 as initial running process\n");
+//    printf("create P0 as initial running process\n");
     p = dequeue(&freeList);
     p->priority = 0;
     p->ppid = 0; p->parent = p;  // P0's parent is itself
     running = p;
-    kprintf("running = %d\n", running->pid);
-    printList("freeList", freeList);
+//    kprintf("running = %d\n", running->pid);
+//    printList("freeList", freeList);
 }
 
 int kexit(int exitValue)
@@ -149,8 +150,8 @@ PROC *kfork(int func, int priority)
     p->kstack[SSIZE-1] = (int)func;  // in dec reg=address ORDER !!!
     p->ksp = &(p->kstack[SSIZE-14]);
     enqueue(&readyQueue, p);
-    printf("%d kforked a child %d\n", running->pid, p->pid);
-    printList("readyQueue", readyQueue);
+//    printf("%d kforked a child %d\n", running->pid, p->pid);
+//    printList("readyQueue", readyQueue);
     return p;
 }
 
@@ -182,11 +183,11 @@ int kwait(int *status){
 
 int scheduler()
 {
-    kprintf("proc %d in scheduler ", running->pid);
+//    kprintf("proc %d in scheduler ", running->pid);
     if (running->status == READY)
         enqueue(&readyQueue, running);
     running = dequeue(&readyQueue);
-    kprintf("next running = %d\n", running->pid);
+//    kprintf("next running = %d\n", running->pid);
 }
 
 void doExit(){
@@ -214,6 +215,58 @@ void doWait(){
     int pid = kwait(&status);
     printf("ZOMBIE child pid %d, exit code %d\n", pid, status);
 }
+
+int block(SEMAPHORE * s){
+
+    running->status = BLOCK;
+    enqueue(&s->queue, running);
+    tswitch();
+}
+
+int signal(SEMAPHORE *s){
+    PROC *p = dequeue(&s->queue);
+    p->status = READY;
+    enqueue(&readyQueue, p);
+}
+
+int P(SEMAPHORE *s){
+    int SR = int_off();
+    s->value--;
+    if(s->value < 0){
+        block(s);
+    }
+
+    int_on(SR);
+}
+
+int V(SEMAPHORE *s){
+    int SR = int_off();
+    s->value++;
+    if(s->value <= 0){
+        signal(s);
+    }
+
+    int_on(SR);
+}
+
+//void producer(){
+//    while(1){
+//        c = kgetc();
+//        P(empty);
+//        P(pmutex);
+//        buf[head++] = item;
+//        head %= N;
+//        V(pmutex);
+//        V(full);
+//
+//    }
+//}
+//
+//void consumer(){
+//    while(1){
+//
+//    }
+//}
 
 int body(int pid, int ppid, int func, int priority)
 {
