@@ -9,7 +9,7 @@ rm *.o *.elf
 echo ready to go?
 read dummy
 
-qemu-system-arm -M versatilepb -m 128M -kernel t.bin -serial mon:stdio -serial /dev/pts/0 -serial /dev/pts/0
+qemu-system-arm -M versatilepb -m 128M -kernel t.bin -serial mon:stdio
 
 
 

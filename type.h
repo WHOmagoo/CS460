@@ -84,7 +84,7 @@ typedef struct proc{
     int    kstack[SSIZE];
 }PROC;
 
-typedef volatile struct pipe{
+typedef struct pipe{
     char buf[PSIZE];
     int head, tail;
     int data, room;

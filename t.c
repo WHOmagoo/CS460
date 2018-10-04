@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "uart.c"
 #include "pipe.c"
 
-volatile PIPE *kpipe;
+PIPE *kpipe;
 
 void copy_vectors(void) {
     extern u32 vectors_start;
@@ -62,23 +62,31 @@ int body();
 int pipe_writer() // pipe writer task code
 {
     struct uart *up = &uart[0];
-    char line[PSIZE];
+    char line[128];
 
     kprintf("WRITER IS PID %d", running->pid);
 
     while(1){
-        uprints(up, "Enter a line for task1 to get : ");
-//        kprints("Enter a line for task1 to get : ");
-        kprintf("task%d waits for line from UART0\n", running->pid);
-//        kprintf("task%d waits for line from console\n", running->pid);
-        ugets(up, line);
-//        kgets(line);
-        uprints(up, "\r\n");
-//        kprintf("\r\n");
+//        uprints(up, "Enter a line for task1 to get : ");
+        kprints("WRITER Enter a line for task1 to get :\n\r");
+//        kprintf("task%d waits for line from UART0\n", running->pid);
+        kprintf("WRITER task%d waits for line from console\n", running->pid);
+//        ugets(up, line);
+        kgets(line);
+
+
+//        uprints(up, "\r\n");
+        kprintf("\r\n");
 //        printf("task%d writes line=[%s] to pipe\n", running->pid, line);
         kprintf("task%d writes line=[%s] to pipe, length = %d\n", running->pid, line, strlen(line));
 
         write_pipe(kpipe, line, strlen(line));
+
+
+        int SP = int_on();
+        tswitch();
+
+        int_off(SP);
     }
 }
 
@@ -93,15 +101,17 @@ int pipe_reader()
     while(1){
 //        printf("task%d reading from pipe\n", running->pid);
         kprintf("READ - task%d reading from pipe\n", running->pid);
-        n = read_pipe(kpipe, line, 20);
+        n = read_pipe(kpipe, line, PSIZE);
+
 //        printf("task%d read n=%d bytes from pipe : [", running->pid, n);
         kprintf("<READ> -task%d read n=%d bytes from pipe : [", running->pid, n);
-        for (i=0; i<n; i++)
+        for (i=0; i<n; i++) {
             kputc(line[i]);
+        }
         kprintf("]\n");
+
     }
 }
-
 
 int main()
 {
@@ -131,8 +141,12 @@ int main()
     kpipe = create_pipe(); // create global kpipe
     init();
     kprintf("P0 kfork tasks\n");
+
     kfork((int)pipe_writer, 1); // pipe writer process
     kfork((int)pipe_reader, 1); // pipe reader process
+
+    printList("Ready queue init", readyQueue);
+
     while(1){
         if (readyQueue)
             tswitch();

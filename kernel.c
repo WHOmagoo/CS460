@@ -39,7 +39,7 @@ typedef struct proc{
 }PROC;
 ***************************/
 #define NPROC 9
-PROC proc[NPROC], *running, *freeList, *readyQueue, *sleepList;
+PROC proc[NPROC], *freeList, *readyQueue, *sleepList, *running;
 int procsize = sizeof(PROC);
 int body();
 
@@ -63,8 +63,6 @@ int init()
     p->priority = 0;
     p->ppid = 0; p->parent = p;  // P0's parent is itself
     running = p;
-    kprintf("running = %d\n", running->pid);
-    printList("freeList", freeList);
 }
 
 int kexit(int exitValue)
@@ -96,36 +94,62 @@ int kexit(int exitValue)
 
 int ksleep(int event) {
     int SR = int_off();
+//    kputc('s');
 // disable IRQ and return CPSR
-    kprintf("Zleep \\%d/ for %d", running->pid, event);
+//    kprintf("Zleep \\%d/ for %d", running->pid, event);
+
+//    PROC *dq= dequeue(&readyQueue);
+//
+//    if(dq || dq->pid != running->pid){
+//        printf("Dequeued RONG");
+//    } else {
+//        printf("DQ RIGHT");
+//    }
+
     running->event = event;
     running->status = SLEEP;
     enqueue(&sleepList, running);
+
     tswitch(); // switch process
     int_on(SR); // restore original CPSR
 }
 
 int kwakeup(int event)
 {
+//    kputc('w');
     int SR = int_off();
 // disable IRQ and return CPSR
 
-    PROC *p = sleepList;
+    PROC *cur = sleepList;
+    PROC *prev = 0;
 
-    kprintf("Waking up on %d = {", event);
+//    kprintf("Waking up on %d = {", event);
 
-    kprintf("{\n\r");
-    while(p){
-        kprintf("status = %d, event = %d, pid %d\n\r", p->status, p->event, p->pid);
-        if (p->status==SLEEP && p->event==event){
-            p->status = READY;
-            enqueue(&readyQueue, p);
-            kprintf("\\%d/] ", p->pid);
+//    kprintf("{\n\r");
+
+    while(cur){
+//        kprintf("status = %d, event = %d, pid %d\n\r", p->status, p->event, p->pid);
+        if (cur->status==SLEEP && cur->event==event){
+
+//            kprintf("Waking up pid %d with event %d\n\r", cur->pid, event);
+            cur->status = READY;
+
+            if(prev){
+                prev->next = cur->next;
+            } else {
+                sleepList = cur->next;
+            }
+            enqueue(&readyQueue, cur);
+//            kprintf("\\%d/] ", p->pid);
+        } else {
+//            kprintf("wanted %d was %d\n\r", event, cur->event);
+            prev = cur;
         }
-        p = p->next;
+
+        cur = cur->next;
     }
 
-    kprintf("}\n\n\r");
+//    kprintf("}\n\n\r");
     int_on(SR);
 // restore original CPSR
 }
@@ -186,11 +210,12 @@ int kwait(int *status){
 
 int scheduler()
 {
-    kprintf("proc %d in scheduler ", running->pid);
+//    kprintf("proc %d in scheduler ", running->pid);
     if (running->status == READY)
         enqueue(&readyQueue, running);
     running = dequeue(&readyQueue);
-    kprintf("next running = %d\n", running->pid);
+
+//    kprintf("next running = %d\n", running->pid);
 }
 
 void doExit(){

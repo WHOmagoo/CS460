@@ -40,6 +40,7 @@ int read_pipe(PIPE *p, char *buf, int n){
 
     if(p->status != FREE) { // p->status must not be FREE
         while (n) {
+            lock();
             while (p->data) {
                 *buf++ = p->buf[p->tail++]; // read a byte to buf
                 p->tail %= SSIZE;
@@ -52,16 +53,22 @@ int read_pipe(PIPE *p, char *buf, int n){
                     break;
             }
 //
-            kprintf("Waking up Writer %d\n\r", &(p->room));
-            kwakeup(&(p->room)); // wakeup writers
-            if (r) // if has read some data
-//
+//            kprintf("Waking up Writer %d\n\r", &(p->room));
+            kwakeup((int) &(p->room)); // wakeup writers
+
+            if (r) { // if has read some data
+                unlock();
                 return r;
+            }
+
+            unlock();
+            ksleep((int) &(p->data));
 //
-            printf("Reader Sleeping as %x\n\r", (int)&(p->data));
             // pipe has no data
-            ksleep(&(p->data)); // sleep for data
         }
+
+        printf("Got out somehow");
+        ksleep((int) &(p->data)); // sleep for data
     } else {
         kprintf("Trying to read pipe on invalid p");
         return;
@@ -78,6 +85,7 @@ int write_pipe(PIPE *p, char *buf, int n)
     }
 
     if(p && p->status != FREE) { // p->status must not be FREE
+        lock();
         while (n) {
             while (p->room > 0) {
                 p->buf[p->head++] = *buf++; // write a byte to pipe;
@@ -91,21 +99,21 @@ int write_pipe(PIPE *p, char *buf, int n)
                     break;
             }
 
-
-
-            kprintf("Waking up Reader as %x\n\r", &(p->data));
-
-            kwakeup( &p->data);
+            kwakeup( (int) &(p->data));
             // wakeup readers, if any.
 
             if (n == 0) {
+                kprintf("***Finished writing all bytes***\n");
                 // finished writing n bytes
+                unlock();
                 return r;
             }
             // still has data to write but pipe has no room
 
-            kprintf("Sleeping as Writer %x\n\r", &(p->data));
+            unlock();
             ksleep((int) &(p->room));
+            lock();
+            kprintf("Resuming after space has filled %d cur buf = %s\n\r", p->room, buf);
             // sleep for room
         }
     } else {

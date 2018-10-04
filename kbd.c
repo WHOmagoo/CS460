@@ -147,5 +147,7 @@ int kgets(char s[ ])
     }
 
     *s = 0;
+    kputc('\n');
+
     return strlen(s);
 }
