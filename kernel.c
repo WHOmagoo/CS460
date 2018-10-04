@@ -100,8 +100,10 @@ int ksleep(int event) {
     running->event = event;
     running->status = SLEEP;
     enqueue(&sleepList, running);
+
     int_on(SR); // restore original CPSR
     tswitch(); // switch process
+    int_on(SR);
 }
 
 int kwakeup(int event)
@@ -111,19 +113,25 @@ int kwakeup(int event)
 // disable IRQ and return CPSR
 
     PROC *p = sleepList;
+    PROC *prev = 0;
 
-    //kprintf("Waking up = ");
+//    kprintf("Waking up = ");
     while(p){
         if (p->status==SLEEP && p->event==event){
+            if(prev){
+                prev->next = p->next;
+            } else {
+                sleepList = p->next;
+            }
             p->status = READY;
             enqueue(&readyQueue, p);
-            kprintf("[%d] ", p->pid);
+//            kprintf("[%d] ", p->pid);
             success = 1;
         }
+        prev = p;
         p = p->next;
     }
 
-    kprintf("\n");
     int_on(SR);
     return success;
 // restore original CPSR
@@ -227,27 +235,18 @@ int body(int pid, int ppid, int func, int priority)
     //int pid;
     //kprintf("proc %d resume to body()\n", running->pid);
     while(1){
-        pid = running->pid;
-        if (pid==0) color=BLUE;
-        if (pid==1) color=WHITE;
-        if (pid==2) color=GREEN;
-        if (pid==3) color=CYAN;
-        if (pid==4) color=YELLOW;
-        if (pid==5) color=WHITE;
-        if (pid==6) color=GREEN;
-        if (pid==7) color=WHITE;
-        if (pid==8) color=CYAN;
 
+//        kprintf("In p1 loop");
 
 //        printList("Sleep Queue", sleepList);
-//        printList("readyQueue", readyQueue);
+//        printList("ready Queue", readyQueue);
         //printChildren("Children", running);
         //kprintf("proc %d running, parent = %d  ", running->pid, running->ppid);
         //kprintf("input a char [s|f|q|w|q : ");
         //c = kgetc();
 //        printf("%c\n", c);
 
-        kputc("a");
+
 
         tswitch();
 

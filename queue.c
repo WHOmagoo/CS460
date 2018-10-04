@@ -63,7 +63,7 @@ int printList(char *name, PROC *p)
         kprintf("[%d%d]->", p->pid, p->priority);
         p = p->next;
     }
-    kprintf("NULL\n");
+    kprintf("NULL\n\r");
 }
 
 void addChild(PROC *queue, PROC *child){

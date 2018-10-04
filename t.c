@@ -260,7 +260,6 @@ void listen(){
     while (1) {
         color = CYAN;
         kprintf("Enter a line from KBD\n");
-        kgetc();
         kgets(line);
         color = CYAN;
         kprintf("line = %s\n", line);
@@ -300,6 +299,8 @@ int main() {
     while (1) {
         if (readyQueue)
             tswitch();
+
+        printf("Hello!");
     }
 
     return 0;

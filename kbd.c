@@ -52,33 +52,36 @@ void kbd_handler() {
     KBD *kp = &kbd;
     color = YELLOW;
     scode = *(kp->base + KDATA);
-    if (scode & 0x80)
+    if (scode & 0x80){
+        if (scode == 0xAA) {
+            lShift = 0;
+        } else if (scode == 0xB6) {
+            rShift = 0;
+        }
         return;
+    }
 
     c = unsh[scode];
     if (c >= 'a' && c <= 'z'){
         if (lShift || rShift) {
-            printf("kbd interrupt: c=%s %c\n", c - 32, c - 32);
+            //kputc(c - 32);
+//            printf("kbd interrupt: c=%s %c\n\r", c - 32, c - 32);
         } else {
-            printf("kbd interrupt: c=%s %c\n", c, c);
+            //kputc(c);
+//            printf("kbd interrupt: c=%s %c\n\r", c, c);
         }
-    } else if (scode & 0x2A){
+    } else if (scode == 0x2A){
         lShift = 1;
-    } else if (scode & 0x36){
+        return;
+    } else if (scode == 0x36){
         rShift = 1;
-    } else if (scode & 0xAA){
-        lShift = 0;
-    } else if (scode & 0xB6){
-        rShift = 0;
+        return;
     }
 
     kp->buf[kp->head++] = c;
     kp->head %= 128;
     kp->data++; kp->room--;
-    kprintf("Waking up from keyboard intterupt");
-    if(kwakeup(&(kp->data)) == 0){
-        printf("Nothing to wakeup");
-    }
+    kwakeup(&(kp->data));
 }
 
 //TODO make there only be one kgetc
@@ -103,7 +106,6 @@ void kbd_handler() {
 int kgetc()
 {
 
-    kprintf("Trying to get something");
     char c;
     KBD *kp = &kbd;
 
@@ -114,7 +116,6 @@ int kgetc()
             unlock();
             ksleep(&(kp->data));
         } else {
-            kprintf("Continuing\n\r");
             break;
         }
     }
@@ -123,7 +124,9 @@ int kgetc()
     c = kp->buf[kp->tail++];
     kp->tail %= 128;
 
-    kprintf("YES!!! %d", kp->data);
+    if((lShift || rShift) && (c >= 'a' && c <= 'z')){
+        c -= 32;
+    }
 
     // updating variables: must disable interrupts
     int_off();
@@ -133,21 +136,17 @@ int kgetc()
     int_on();
     unlock();
 
-    printf("Returning %c", c);
     return c;
 }
 
 int kgets(char s[ ])
 {
-    kprints("Getting string");
     char c;
     while((c=kgetc()) != '\r'){
         *s++ = c;
-        kprintf("Got something!!!!");
         kputc(c);
     }
 
-    kprintf("Exited loop");
     *s = 0;
     return strlen(s);
 }
