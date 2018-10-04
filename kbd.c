@@ -81,7 +81,6 @@ void kbd_handler() {
     kp->buf[kp->head++] = c;
     kp->head %= 128;
     kp->data++; kp->room--;
-    kwakeup(&(kp->data));
 }
 
 //TODO make there only be one kgetc
@@ -108,34 +107,14 @@ int kgetc()
 
     char c;
     KBD *kp = &kbd;
-
-    while(1) {
-        lock();
-        if (kp->data == 0) {
-            kp->data = 0;
-            unlock();
-            ksleep(&(kp->data));
-        } else {
-            break;
-        }
-    }
-
-
+    while(kp->data <= 0); // wait for data > 0; RONLY, no need to lock
     c = kp->buf[kp->tail++];
     kp->tail %= 128;
 
-    if((lShift || rShift) && (c >= 'a' && c <= 'z')){
-        c -= 32;
-    }
-
     // updating variables: must disable interrupts
     int_off();
-
-    kp->data--;
-    kp->room++;
+    kp->data--; kp->room++;
     int_on();
-    unlock();
-
     return c;
 }
 
