@@ -47,7 +47,7 @@ int init()
 {
     int i, j;
     PROC *p;
-    kprintf("kernel_init()\n");
+    //kprintf("kernel_init()\n");
     for (i=0; i<NPROC; i++){
         p = &proc[i];
         p->pid = i;
@@ -58,18 +58,18 @@ int init()
     freeList = &proc[0];
     readyQueue = 0;
 
-    printf("create P0 as initial running process\n");
+    //printf("create P0 as initial running process\n");
     p = dequeue(&freeList);
     p->priority = 0;
     p->ppid = 0; p->parent = p;  // P0's parent is itself
     running = p;
-    kprintf("running = %d\n", running->pid);
-    printList("freeList", freeList);
+    //kprintf("running = %d\n", running->pid);
+    //printList("freeList", freeList);
 }
 
 int kexit(int exitValue)
 {
-    printf("proc %d kexit\n", running->pid);
+    //printf("proc %d kexit\n", running->pid);
     if(running->pid != 1) {
         running->status = ZOMBIE;
         running->exitCode = exitValue;
@@ -100,29 +100,32 @@ int ksleep(int event) {
     running->event = event;
     running->status = SLEEP;
     enqueue(&sleepList, running);
-    tswitch(); // switch process
     int_on(SR); // restore original CPSR
+    tswitch(); // switch process
 }
 
 int kwakeup(int event)
 {
     int SR = int_off();
+    int success = 0;
 // disable IRQ and return CPSR
 
     PROC *p = sleepList;
 
-    kprintf("Waking up = ");
+    //kprintf("Waking up = ");
     while(p){
         if (p->status==SLEEP && p->event==event){
             p->status = READY;
             enqueue(&readyQueue, p);
             kprintf("[%d] ", p->pid);
+            success = 1;
         }
         p = p->next;
     }
 
     kprintf("\n");
     int_on(SR);
+    return success;
 // restore original CPSR
 }
 
@@ -149,8 +152,8 @@ PROC *kfork(int func, int priority)
     p->kstack[SSIZE-1] = (int)func;  // in dec reg=address ORDER !!!
     p->ksp = &(p->kstack[SSIZE-14]);
     enqueue(&readyQueue, p);
-    printf("%d kforked a child %d\n", running->pid, p->pid);
-    printList("readyQueue", readyQueue);
+    //printf("%d kforked a child %d\n", running->pid, p->pid);
+    //printList("readyQueue", readyQueue);
     return p;
 }
 
@@ -243,6 +246,8 @@ int body(int pid, int ppid, int func, int priority)
         //kprintf("input a char [s|f|q|w|q : ");
         //c = kgetc();
 //        printf("%c\n", c);
+
+        kputc("a");
 
         tswitch();
 

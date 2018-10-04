@@ -75,7 +75,10 @@ void kbd_handler() {
     kp->buf[kp->head++] = c;
     kp->head %= 128;
     kp->data++; kp->room--;
-    kwakeup(&kp->data);
+    kprintf("Waking up from keyboard intterupt");
+    if(kwakeup(&(kp->data)) == 0){
+        printf("Nothing to wakeup");
+    }
 }
 
 //TODO make there only be one kgetc
@@ -99,24 +102,38 @@ void kbd_handler() {
 //kgetc lab4
 int kgetc()
 {
+
+    kprintf("Trying to get something");
     char c;
     KBD *kp = &kbd;
 
-    lock();
-    if(kp->data==0){
-        unlock();
-        ksleep(&kp->data);
+    while(1) {
+        lock();
+        if (kp->data == 0) {
+            kp->data = 0;
+            unlock();
+            ksleep(&(kp->data));
+        } else {
+            kprintf("Continuing\n\r");
+            break;
+        }
     }
 
 
     c = kp->buf[kp->tail++];
     kp->tail %= 128;
 
+    kprintf("YES!!! %d", kp->data);
+
     // updating variables: must disable interrupts
     int_off();
-    kp->data--; kp->room++;
+
+    kp->data--;
+    kp->room++;
     int_on();
     unlock();
+
+    printf("Returning %c", c);
     return c;
 }
 
@@ -126,8 +143,11 @@ int kgets(char s[ ])
     char c;
     while((c=kgetc()) != '\r'){
         *s++ = c;
+        kprintf("Got something!!!!");
         kputc(c);
     }
+
+    kprintf("Exited loop");
     *s = 0;
     return strlen(s);
 }

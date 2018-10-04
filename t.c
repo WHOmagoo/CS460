@@ -260,6 +260,7 @@ void listen(){
     while (1) {
         color = CYAN;
         kprintf("Enter a line from KBD\n");
+        kgetc();
         kgets(line);
         color = CYAN;
         kprintf("line = %s\n", line);
@@ -290,7 +291,7 @@ int main() {
     kbd_init();
 
 
-    kprintf("Welcome to WANIX in Arm - Made by Hugh McGough\n");
+    //kprintf("Welcome to WANIX in Arm - Made by Hugh McGough\n");
     timer_start(0);
     init();
     kfork((int) body, 1);
