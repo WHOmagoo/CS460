@@ -97,6 +97,7 @@ int kexit(int exitValue)
 int ksleep(int event) {
     int SR = int_off();
 // disable IRQ and return CPSR
+    kprintf("Zleep \\%d/ for %d", running->pid, event);
     running->event = event;
     running->status = SLEEP;
     enqueue(&sleepList, running);
@@ -111,17 +112,20 @@ int kwakeup(int event)
 
     PROC *p = sleepList;
 
-    kprintf("Waking up = ");
+    kprintf("Waking up on %d = {", event);
+
+    kprintf("{\n\r");
     while(p){
+        kprintf("status = %d, event = %d, pid %d\n\r", p->status, p->event, p->pid);
         if (p->status==SLEEP && p->event==event){
             p->status = READY;
             enqueue(&readyQueue, p);
-            kprintf("[%d] ", p->pid);
+            kprintf("\\%d/] ", p->pid);
         }
         p = p->next;
     }
 
-    kprintf("\n");
+    kprintf("}\n\n\r");
     int_on(SR);
 // restore original CPSR
 }

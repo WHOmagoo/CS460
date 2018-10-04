@@ -12,6 +12,7 @@ int strlen(char *s){
     int counter = 0;
     while(*s){
         counter++;
+        s++;
     }
 
     return counter;

@@ -58,6 +58,7 @@ typedef unsigned int   u32;
 #define WHITE  6
 
 #define  SSIZE 1024
+#define PSIZE 16
 
 #define  FREE   0
 #define  READY  1
@@ -83,8 +84,8 @@ typedef struct proc{
     int    kstack[SSIZE];
 }PROC;
 
-typedef struct pipe{
-    char buf[SSIZE];
+typedef volatile struct pipe{
+    char buf[PSIZE];
     int head, tail;
     int data, room;
     int status;

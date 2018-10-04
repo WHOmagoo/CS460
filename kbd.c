@@ -31,63 +31,110 @@ typedef volatile struct kbd{ // base = 0x1000 6000
     int head, tail, data, room;
 }KBD;
 
-extern int color;
 volatile KBD kbd;
-int kputc(char);
+int lShift = 0;
+int rShift = 0;
+extern int color;
+int kputc(char); // kputc() in vid.c driver
 
 int kbd_init()
 {
     KBD *kp = &kbd;
     kp->base = (char *)0x10006000;
-    *(kp->base+KCNTL) = 0x14; // 0001 0100
-    *(kp->base+KCLK)  = 8;
-    kp->data = 0;kp->room = 128;
+    *(kp->base + KCNTL) = 0x14;
+    *(kp->base + KCLK)  = 8;
     kp->head = kp->tail = 0;
+    kp->data = 0; kp->room = 128;
 }
 
-void kbd_handler()
-{
+void kbd_handler() {
     u8 scode, c;
-    // volatile char *t, *tt;
-    int i;
     KBD *kp = &kbd;
-    color=YELLOW;
-    scode = *(kp->base+KDATA);
-    if (scode & 0x80)
+    color = YELLOW;
+    scode = *(kp->base + KDATA);
+    if (scode & 0x80){
+        if (scode == 0xAA) {
+            lShift = 0;
+        } else if (scode == 0xB6) {
+            rShift = 0;
+        }
         return;
+    }
 
     c = unsh[scode];
-    /*
-    if (c == 'r')
-       kputc('\n');
-    kputc(c);
-    */
-    /*********
-    kprintf("kbd interrupt: c=");
-    if (c != '\r')
-      kprintf("%x %c\n", c, c);
-    else
-      kprints("0x 0D <cr>\n\r");
-    *****************/
+    if (c >= 'a' && c <= 'z'){
+        if (lShift || rShift) {
+            //kputc(c - 32);
+//            printf("kbd interrupt: c=%s %c\n\r", c - 32, c - 32);
+        } else {
+            //kputc(c);
+//            printf("kbd interrupt: c=%s %c\n\r", c, c);
+        }
+    } else if (scode == 0x2A){
+        lShift = 1;
+        return;
+    } else if (scode == 0x36){
+        rShift = 1;
+        return;
+    }
+
     kp->buf[kp->head++] = c;
     kp->head %= 128;
     kp->data++; kp->room--;
+    kwakeup(&(kp->data));
 }
 
-int kputc(char);  // kputc() in vid.c driver
+//TODO make there only be one kgetc
+//kgetc lab3
+//int kgetc()
+//{
+//    char c;
+//    KBD *kp = &kbd;
+//
+//    unlock();
+//    while(kp->data == 0);
+//
+//    lock();
+//    c = kp->buf[kp->tail++];
+//    kp->tail %= 128;
+//    kp->data--; kp->room++;
+//    unlock();
+//    return c;
+//}
 
+//kgetc lab4
 int kgetc()
 {
+
     char c;
     KBD *kp = &kbd;
-    while(kp->data <= 0); // wait for data > 0; RONLY, no need to lock
+
+    while(1) {
+        lock();
+        if (kp->data == 0) {
+            kp->data = 0;
+            unlock();
+            ksleep(&(kp->data));
+        } else {
+            break;
+        }
+    }
+
     c = kp->buf[kp->tail++];
     kp->tail %= 128;
 
+    if((lShift || rShift) && (c >= 'a' && c <= 'z')){
+        c -= 32;
+    }
+
     // updating variables: must disable interrupts
     int_off();
-    kp->data--; kp->room++;
+
+    kp->data--;
+    kp->room++;
     int_on();
+    unlock();
+
     return c;
 }
 
@@ -98,6 +145,7 @@ int kgets(char s[ ])
         *s++ = c;
         kputc(c);
     }
+
     *s = 0;
     return strlen(s);
 }
