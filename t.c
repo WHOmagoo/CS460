@@ -22,7 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "queue.c"
 #include "kernel.c"
 #include "timer.c"
+#include "uart.c"
+#include "pipe.c"
 
+PIPE *kpipe;
 
 void copy_vectors(void) {
     extern u32 vectors_start;
@@ -56,36 +59,85 @@ void IRQ_handler()
 }
 int body();
 
+int pipe_writer() // pipe writer task code
+{
+    struct uart *up = &uart[0];
+    char line[128];
+    while(1){
+        uprintf("Enter a line for task1 to get : ");
+        printf("task%d waits for line from UART0\n", running->pid);
+        ugets(up, line);
+        uprints(up, "\r\n");
+        printf("task%d writes line=[%s] to pipe\n", running->pid, line);
+        write_pipe(kpipe, line, strlen(line));
+    }
+}
+
+int pipe_reader()
+// pipe reader task code
+{
+    char line[128];
+    int i, n;
+    while(1){
+        printf("task%d reading from pipe\n", running->pid);
+        n = read_pipe(kpipe, line, 20);
+        printf("task%d read n=%d bytes from pipe : [", running->pid, n);
+        for (i=0; i<n; i++)
+            kputc(line[i]);
+        printf("]\n");
+    }
+}
+
+
 int main()
 {
-    int i;
-    char line[128];
-    u8 kbdstatus, key, scode;
-
-    color = WHITE;
-    row = col = 0;
-
-
-/* enable timer0,1, uart0,1 SIC interrupts */
-    VIC_INTENABLE |= (1<<4);  // timer0,1 at bit4
-    VIC_INTENABLE |= (1<<5);  // timer2,3 at bit5
-
-    /* enable KBD IRQ */
-    VIC_INTENABLE |= 1<<31;  // SIC to VIC's IRQ31
-    SIC_ENSET |= 1<<3;       // KBD int=3 on SIC
-
     fbuf_init();
-    timer_init();
+    kprintf("Welcome to Wanix in ARM\n");
+    uart_init();
     kbd_init();
-
-
-    kprintf("Welcome to WANIX in Arm - Made by Hugh McGough\n");
-    timer_start(0);
-    init();
-    kfork((int)body, 1);
-
+    pipe_init();
+// initialize PIPEs
+    kpipe = create_pipe(); // create global kpipe
+    kernel_nit();
+    kprintf("P0 kfork tasks\n");
+    kfork((int)pipe_writer, 1); // pipe writer process
+    kfork((int)pipe_reader, 1); // pipe reader process
     while(1){
         if (readyQueue)
             tswitch();
     }
 }
+
+//int main()
+//{
+//    int i;
+//    char line[128];
+//    u8 kbdstatus, key, scode;
+//
+//    color = WHITE;
+//    row = col = 0;
+//
+//
+///* enable timer0,1, uart0,1 SIC interrupts */
+//    VIC_INTENABLE |= (1<<4);  // timer0,1 at bit4
+//    VIC_INTENABLE |= (1<<5);  // timer2,3 at bit5
+//
+//    /* enable KBD IRQ */
+//    VIC_INTENABLE |= 1<<31;  // SIC to VIC's IRQ31
+//    SIC_ENSET |= 1<<3;       // KBD int=3 on SIC
+//
+//    fbuf_init();
+//    timer_init();
+//    kbd_init();
+//
+//
+//    kprintf("Welcome to WANIX in Arm - Made by Hugh McGough\n");
+//    timer_start(0);
+//    init();
+//    kfork((int)body, 1);
+//
+//    while(1){
+//        if (readyQueue)
+//            tswitch();
+//    }
+//}

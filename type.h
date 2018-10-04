@@ -82,3 +82,11 @@ typedef struct proc{
 
     int    kstack[SSIZE];
 }PROC;
+
+typedef struct pipe{
+    char buf[SSIZE];
+    int head, tail;
+    int data, room;
+    int status;
+}PIPE;
+
