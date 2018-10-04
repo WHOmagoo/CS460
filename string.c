@@ -76,3 +76,26 @@ int memset(char *dest, char c, int n){
         n--;
     }
 }
+
+int strncat(char *dest, int n, char *src){
+    char *cur = dest;
+
+    while(*cur != '\0'){
+        cur++;
+        n--;
+    }
+
+    while(n > 0 && *src != '\0'){
+        *cur = *src;
+        cur++;
+        src++;
+        n--;
+    }
+
+    if(n != 0){
+        *cur = '\0';
+    } else {
+        cur--;
+        cur = '\0';
+    }
+}

@@ -38,10 +38,14 @@ typedef struct proc{
   int    kstack[SSIZE];
 }PROC;
 ***************************/
+
 #define NPROC 9
+
+#include "timer.c"
 PROC proc[NPROC], *running, *freeList, *readyQueue, *sleepList;
 int procsize = sizeof(PROC);
 int body();
+
 
 int init()
 {
@@ -95,15 +99,19 @@ int kexit(int exitValue)
 }
 
 int ksleep(int event) {
-    int SR = int_off();
+    if(running->pid != 1) {
+        int SR = int_off();
 // disable IRQ and return CPSR
-    running->event = event;
-    running->status = SLEEP;
-    enqueue(&sleepList, running);
+        running->event = event;
+        running->status = SLEEP;
+        enqueue(&sleepList, running);
 
-    int_on(SR); // restore original CPSR
-    tswitch(); // switch process
-    int_on(SR);
+        //int_on(SR); // restore original CPSR
+        tswitch(); // switch process
+        int_on(SR);
+    } else {
+//        kprintf("p1 never sleeps");
+    }
 }
 
 int kwakeup(int event)
@@ -226,6 +234,13 @@ void doWait(){
     printf("ZOMBIE child pid %d, exit code %d\n", pid, status);
 }
 
+int p1(){
+    while(1) {
+//        kprintf("In p1");
+        tswitch();
+    }
+}
+
 int body(int pid, int ppid, int func, int priority)
 {
 
@@ -236,26 +251,50 @@ int body(int pid, int ppid, int func, int priority)
     //kprintf("proc %d resume to body()\n", running->pid);
     while(1){
 
-//        kprintf("In p1 loop");
+        kprintf("In p1 loop");
 
-//        printList("Sleep Queue", sleepList);
-//        printList("ready Queue", readyQueue);
-        //printChildren("Children", running);
-        //kprintf("proc %d running, parent = %d  ", running->pid, running->ppid);
-        //kprintf("input a char [s|f|q|w|q : ");
-        //c = kgetc();
-//        printf("%c\n", c);
+        while(1){
+
+            kprintf("\n\r");
+        printList("Sleep Queue", sleepList);
+        printList("ready Queue", readyQueue);
+        printChildren("Children", running);
+        kprintf("proc %d running, parent = %d  ", running->pid, running->ppid);
+        kprintf("input a char [s|f|q|w|t : ");
+        int success;
+
+        char result[16];
+        int n = 2;
 
 
-
-        tswitch();
-
-//        switch(c){
-//            case 's': tswitch();            break;
-//            case 'f': kfork((int)body, 1);  break;
-//            case 'q': doExit();             break;
-//            case 'w': doWait();             break;
-//            case ',': kprintf("WAAAAHHH!!!!");
-//        }
+            c = kgetc();
+            kprintf("<%c>", c);
+            success = 1;
+            switch (c) {
+                case 's':
+                    tswitch();
+                    break;
+                case 'f':
+                    printf("\n\r");
+                    kfork((int) body, 1);
+                    break;
+                case 'q':
+                    doExit();
+                    break;
+                case 'w':
+                    doWait();
+                    break;
+                case 't':
+                    doT(running->pid);
+                    break;
+//                case 'm':
+//                    kprintf("%d\n\r", n);
+//                    tqeInsert(n, (PROC *) n);
+//
+//                    n = (n * 4723) % 89;
+                default:
+                    success = 0;
+            }
+        }
     }
 }

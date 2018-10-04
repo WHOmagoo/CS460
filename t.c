@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
 
+//#include <stdio.h>
 //#include "defines.h"
 #include "string.c"
 
@@ -25,7 +26,7 @@ int color;
 #include "exceptions.c"
 #include "queue.c"
 #include "kernel.c"
-#include "timer.c"
+//#include "timer.c"
 
 
 void copy_vectors(void) {
@@ -250,6 +251,7 @@ void IRQ_handler()
 //    }
 //}
 
+int p1();
 int body();
 
 void listen(){
@@ -294,13 +296,11 @@ int main() {
     timer_start(0);
     init();
     kfork((int) body, 1);
-    kfork((int)listen, 1);
 
     while (1) {
+        printf("Again!\n\r");
         if (readyQueue)
             tswitch();
-
-        printf("Hello!");
     }
 
     return 0;
