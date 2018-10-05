@@ -43,7 +43,7 @@ int read_pipe(PIPE *p, char *buf, int n){
             lock();
             while (p->data) {
                 *buf++ = p->buf[p->tail++]; // read a byte to buf
-                p->tail %= SSIZE;
+                p->tail %= PSIZE;
                 p->data--;
                 p->room++;
                 r++;
@@ -91,7 +91,6 @@ int write_pipe(PIPE *p, char *buf, int n)
                 p->buf[p->head++] = *buf++; // write a byte to pipe;
                 p->head %= PSIZE;
                 p->data++;
-                p->data;
                 p->room--;
                 r++;
                 n--;

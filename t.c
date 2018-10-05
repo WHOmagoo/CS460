@@ -64,19 +64,19 @@ int pipe_writer() // pipe writer task code
     struct uart *up = &uart[0];
     char line[128];
 
-    kprintf("WRITER IS PID %d", running->pid);
+    uprints(up, "WRITER IS RUNNING");
 
     while(1){
-//        uprints(up, "Enter a line for task1 to get : ");
-        kprints("WRITER Enter a line for task1 to get :\n\r");
+        uprints(up, "\nEnter a line for task1 to get : ");
+//        kprints("WRITER Enter a line for task1 to get :\n\r");
 //        kprintf("task%d waits for line from UART0\n", running->pid);
-        kprintf("WRITER task%d waits for line from console\n", running->pid);
-//        ugets(up, line);
-        kgets(line);
+        kprintf("WRITER waits for line from console\n");
+        ugets(up, line);
+//        kgets(line);
 
 
 //        uprints(up, "\r\n");
-        kprintf("\r\n");
+//        kprintf("\r\n");
 //        printf("task%d writes line=[%s] to pipe\n", running->pid, line);
         kprintf("task%d writes line=[%s] to pipe, length = %d\n", running->pid, line, strlen(line));
 
@@ -104,11 +104,11 @@ int pipe_reader()
         n = read_pipe(kpipe, line, PSIZE);
 
 //        printf("task%d read n=%d bytes from pipe : [", running->pid, n);
-        kprintf("<READ> -task%d read n=%d bytes from pipe : [", running->pid, n);
+        kprintf("<READ> -task%d read n=%d bytes from pipe : **[", running->pid, n);
         for (i=0; i<n; i++) {
             kputc(line[i]);
         }
-        kprintf("]\n");
+        kprintf("]**\n");
 
     }
 }
