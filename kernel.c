@@ -108,32 +108,41 @@ int ksleep(int event) {
 
 int kwakeup(int event)
 {
+//    kputc('w');
     int SR = int_off();
-    int success = 0;
 // disable IRQ and return CPSR
 
-    PROC *p = sleepList;
+    PROC *cur = sleepList;
     PROC *prev = 0;
 
-//    kprintf("Waking up = ");
-    while(p){
-        if (p->status==SLEEP && p->event==event){
+//    kprintf("Waking up on %d = {", event);
+
+//    kprintf("{\n\r");
+
+    while(cur){
+//        kprintf("status = %d, event = %d, pid %d\n\r", p->status, p->event, p->pid);
+        if (cur->status==SLEEP && cur->event==event){
+
+//            kprintf("Waking up pid %d with event %d\n\r", cur->pid, event);
+            cur->status = READY;
+
             if(prev){
-                prev->next = p->next;
+                prev->next = cur->next;
             } else {
-                sleepList = p->next;
+                sleepList = cur->next;
             }
-            p->status = READY;
-            enqueue(&readyQueue, p);
-//            kprintf("[%d] ", p->pid);
-            success = 1;
+            enqueue(&readyQueue, cur);
+//            kprintf("\\%d/] ", p->pid);
+        } else {
+//            kprintf("wanted %d was %d\n\r", event, cur->event);
+            prev = cur;
         }
-        prev = p;
-        p = p->next;
+
+        cur = cur->next;
     }
 
+//    kprintf("}\n\n\r");
     int_on(SR);
-    return success;
 // restore original CPSR
 }
 
