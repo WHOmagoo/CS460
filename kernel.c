@@ -99,19 +99,21 @@ int kexit(int exitValue)
 }
 
 int ksleep(int event) {
-    if(running->pid != 1) {
+//    if(running->pid != 1) {
         int SR = int_off();
 // disable IRQ and return CPSR
         running->event = event;
         running->status = SLEEP;
         enqueue(&sleepList, running);
 
+
+
         //int_on(SR); // restore original CPSR
         tswitch(); // switch process
         int_on(SR);
-    } else {
+//    } else {
 //        kprintf("p1 never sleeps");
-    }
+//    }
 }
 
 int kwakeup(int event)
@@ -294,7 +296,7 @@ int body(int pid, int ppid, int func, int priority)
                     doWait();
                     break;
                 case 't':
-                    doT(running->pid);
+                    doT(running);
                     break;
 //                case 'm':
 //                    kprintf("%d\n\r", n);

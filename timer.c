@@ -97,6 +97,7 @@ TQE* getNewTQE(){
 //Parameter totalTime is total time but is subtracted from and used like relative time.
 void tqeInsert(int totalTime, PROC *p){
     lock();
+    kprintf("<<%d>>", totalTime);
     TQE *prev = 0;
     TQE *cur = tqeRoot;
     while(cur){
@@ -114,6 +115,8 @@ void tqeInsert(int totalTime, PROC *p){
                 } else {
                     tqeRoot = inserting;
                 }
+            } else {
+                printf("<<No tqe to insert!>>\n\r");
             }
 
             //TODO uncomment this when testing is over
@@ -150,26 +153,32 @@ void tqeInsert(int totalTime, PROC *p){
 
 void tqeIncrement(){
     if(tqeRoot) {
+        lock();
         tqeRoot->relativeTime--;
-        if (tqeRoot->relativeTime <= 0) {
-            TQE *cur = tqeRoot;
-            PROC *p = cur->p;
+        while(tqeCheck());
+        unlock();
+    }
+}
 
-            tqeRoot = cur->next;
+int tqeCheck(){
+    if (tqeRoot->relativeTime <= 0) {
+        TQE *cur = tqeRoot;
+        PROC *p = cur->p;
 
-            if(tqeFree){
-                cur->next = tqeFree->next;
-                tqeFree->next = cur;
-            } else {
-                tqeFree = cur;
-                cur->next = cur;
-            }
+        tqeRoot = cur->next;
 
-            kwakeup((int)p);
-
+        if(tqeFree){
+            cur->next = tqeFree->next;
+            tqeFree->next = cur;
+        } else {
+            tqeFree = cur;
+            cur->next = cur;
         }
+        kwakeup((int)p);
+        return 1;
     }
 
+    return 0;
 }
 
 itoa(char *result, int number){
@@ -216,7 +225,7 @@ void printTqe(){
         strncat(queue, 80, itoaBuf);
         strncat(queue, 80, ", pid=");
 
-        itoa(itoaBuf, (int) cur->p);
+        itoa(itoaBuf, (int) cur->p->pid);
 
         strncat(queue, 80, itoaBuf);
         strncat(queue, 80, "]->");
@@ -304,8 +313,8 @@ void timer_handler(int n) {
             }
         }
         tqeIncrement();
-//        printTqe();
-        tqeprint();
+        printTqe();
+//        tqeprint();
     }
 
     if (t->tick == 0){
