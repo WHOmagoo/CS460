@@ -304,7 +304,8 @@ void timer_handler(int n) {
             }
         }
         tqeIncrement();
-        printTqe();
+//        printTqe();
+        tqeprint();
     }
 
     if (t->tick == 0){
