@@ -1,5 +1,5 @@
 # CS460
-Code for Computer Science 460, relating to operating systems
+Code for Computer Science 460, relating to operating systems a Unix kernel
 
 Each branch is a different assignment.
 
